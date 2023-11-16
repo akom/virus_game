@@ -111,7 +111,7 @@ class Game():
         pygame.draw.rect(display_surface, colors[self.target_virus_type], (0, 100, WINDOW_WIDTH, WINDOW_HEIGHT-200), 4)
     
     def check_collisions(self):
-        """Check for collisions between player and viruss"""
+        """Check for collisions between player and virus"""
         #Check for collision between a player and an indiviaual virus
         #WE must test the type of the virus to see if it matches the type of our target virus
         collided_virus = pygame.sprite.spritecollideany(self.player, self.virus_group)
