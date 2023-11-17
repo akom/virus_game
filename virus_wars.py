@@ -16,7 +16,7 @@ clock = pygame.time.Clock()
 #Define Classes
 class Game():
     """A class to control gameplay"""
-    def __init__(self, player, virus_group):
+    def __init__(self, player, virus_group, life_group):
         """Initilize the game object"""
         #Set game values
         self.score = 0
@@ -27,12 +27,15 @@ class Game():
 
         self.player = player
         self.virus_group = virus_group
+        self.life_group = life_group
 
         #Set sounds and music
         self.next_level_sound = pygame.mixer.Sound("Sounds/A_New_Wave_To_Hit.wav")
 
         #Set font
         self.font = pygame.font.Font("Fonts/AtlantisText-Regular.ttf", 20)
+        self.font_title = pygame.font.Font("Fonts/AtlantisText-Regular.ttf", 50)
+        self.font_subtext = pygame.font.Font("Fonts/AtlantisText-Regular.ttf", 25)
 
         #Set images
         blue_image = pygame.image.load("Images/blue_virus.png")
@@ -82,7 +85,7 @@ class Game():
         score_rect = score_text.get_rect()
         score_rect.topleft = (5, 5)
 
-        lives_text = self.font.render("Vidas: " + str(self.player.lives), True, BLACK)
+        lives_text = self.font.render("Vida: ", True, BLACK)
         lives_rect = lives_text.get_rect()
         lives_rect.topleft = (5, 35)
 
@@ -134,18 +137,27 @@ class Game():
             #Caught the wrong virus
             else:
                 #self.player.die_sound.play()
+                
+                count = self.player.lives
+                i = 0
                 self.player.lives -= 1
+                
+                for life in self.life_group:
+                    if  i == count:
+                     self.life_group.remove(life)
+                    
+             
                 #Check for game over
                 if self.player.lives <= 0:
-                    self.pause_game("Final Score: " + str(self.score), "Press 'Enter' to play again")
+                    self.pause_game("Total de Pontos: " + str(self.score), "Pressione 'Enter' para começar de novo")
                     self.reset_game()
                 self.player.reset()
 
 
     def start_new_round(self):
-        """Populate board with new viruss"""
+        """Populate board with new virus"""
         #Provide a score bonus based on how quickly the round was finished
-        self.score += int(10000*self.round_number/(1 + self.round_time))
+        self.score += int(100*self.round_number/(1 + self.round_time))
 
         #Reset round values
         self.round_time = 0
@@ -221,6 +233,56 @@ class Game():
         self.player.reset()
 
         self.start_new_round()
+
+    def main_menu(self):
+        WHITE= (255, 255, 255)
+        BLACK = (0, 0, 0)
+
+        name_game_text = self.font_title.render("VIRUS WARS", True, BLACK)
+        name_game_rect = name_game_text.get_rect()
+        name_game_rect.center = (WINDOW_WIDTH//2, 100)
+
+        name_game_sub_text = self.font_subtext.render("\"A luta pela Imunização\"", True, BLACK)
+        name_game_sub_rect = name_game_sub_text.get_rect()
+        name_game_sub_rect.center = (WINDOW_WIDTH//2, 150)
+
+        start_game_text = self.font.render("Iniciar Jogo", True, BLACK)
+        start_game_rect = start_game_text.get_rect()
+        start_game_rect.center = (WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 64)
+
+        credits_game_text = self.font.render("Creditos", True, BLACK)
+        credits_game_rect = credits_game_text.get_rect()
+        credits_game_rect.center = (WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 128)
+
+        #Display the pause text
+        display_surface.fill(WHITE)
+        display_surface.blit(name_game_text, name_game_rect)
+        display_surface.blit(name_game_sub_text, name_game_sub_rect)
+        display_surface.blit(start_game_text, start_game_rect)
+        display_surface.blit(credits_game_text, credits_game_rect)
+
+        pygame.display.update()
+
+        is_paused = True
+        while is_paused:
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_UP]:
+                pygame.draw.rect(display_surface,(WHITE),credits_game_rect,1)
+                pygame.draw.rect(display_surface,(0, 0, 10),start_game_rect,1)
+                pygame.display.update()
+
+            if keys[pygame.K_DOWN]:
+                pygame.draw.rect(display_surface,WHITE,start_game_rect,1)
+                pygame.draw.rect(display_surface,(0, 0, 10),credits_game_rect,1)
+                pygame.display.update()
+
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        is_paused = False
+                if event.type == pygame.QUIT:
+                    is_paused = False
+                    running = False
 
 
 class Player(pygame.sprite.Sprite):
@@ -300,6 +362,16 @@ class Virus(pygame.sprite.Sprite):
         if self.rect.top <= 100 or self.rect.bottom >= WINDOW_HEIGHT - 100:
             self.dy = -1*self.dy
 
+class Life(pygame.sprite.Sprite):
+
+    def __init__(self, x, y):
+        super().__init__()
+        self.image = pygame.image.load("Images/life.png")
+        self.rect = self.image.get_rect()
+        self.rect.centerx = x
+        self.rect.centery = y
+        
+
 
 #Create a player group and Player object
 my_player_group = pygame.sprite.Group()
@@ -309,9 +381,19 @@ my_player_group.add(my_player)
 #Create a virus group.
 my_virus_group = pygame.sprite.Group()
 
+#Create a life group.
+my_life_group = pygame.sprite.Group()
+
+x = 70
+for i in range(0, 5):
+    life = Life(x,45)
+    my_life_group.add(life)
+    x += 35
+
 #Create a game object
-my_game = Game(my_player, my_virus_group)
-my_game.pause_game("VIRUS WARS", "Pressione 'Enter' para começar")
+my_game = Game(my_player, my_virus_group, my_life_group)
+my_game.main_menu()
+#my_game.pause_game("VIRUS WARS", "Pressione 'Enter' para começar")
 my_game.start_new_round()
 
 #The main game loop
@@ -335,6 +417,9 @@ while running:
 
     my_virus_group.update()
     my_virus_group.draw(display_surface)
+
+    my_life_group.update()
+    my_life_group.draw(display_surface)
 
     #Update and draw the Game
     my_game.update()
