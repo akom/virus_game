@@ -301,10 +301,10 @@ class Game():
         is_menu = True
         while is_menu:                       
             display_surface.fill(WHITE)
-            display_surface.blit(self.image_background, (200, 180, 0, 0))
+            display_surface.blit(self.image_background, (380, 100, 0, 0))
             text_rects = []
             for i, option in enumerate(options):
-                text_rect = self.draw_text(option, option_font, BLACK, (700), (250 + i * 50 + 10))
+                text_rect = self.draw_text(option, option_font, BLACK, (WINDOW_HEIGHT//2+200 +i * 15), (WINDOW_HEIGHT//2+200 + i * 50 + 10))
                 text_rects.append(text_rect)
                 if self.is_mouse_over_text(text_rect):
                     #self.menu_select_sound.play()
