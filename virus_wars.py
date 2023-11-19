@@ -1,4 +1,4 @@
-import pygame, random
+import pygame, random, sys, time
 
 #Initialize pygame
 pygame.init()
@@ -30,8 +30,10 @@ class Game():
         self.life_group = life_group
 
         #Set sounds and music
-        self.next_level_sound = pygame.mixer.Sound("Sounds/A_New_Wave_To_Hit.wav")
-
+        self.kill_virus_sound = pygame.mixer.Sound("Sounds/kill_virus.wav")
+        self.wrong_virus_sound = pygame.mixer.Sound("Sounds/wrong_virus.wav")
+        self.level_sound = pygame.mixer.Sound("Sounds//Piano_In_The_Dark.wav")
+        
         #Set font
         self.font = pygame.font.Font("Fonts/AtlantisText-Regular.ttf", 20)
         self.font_title = pygame.font.Font("Fonts/AtlantisText-Regular.ttf", 50)
@@ -42,6 +44,7 @@ class Game():
         green_image = pygame.image.load("Images/green_virus.png")
         purple_image = pygame.image.load("Images/purple_virus.png")
         red_image = pygame.image.load("Images/red_virus.png")
+
         #This list cooresponds to the virus_type attribute int 0 -> blue, 1 -> green, 2 -> purple, 3 -> red
         self.target_virus_images = [blue_image, green_image, purple_image, red_image]
 
@@ -75,8 +78,11 @@ class Game():
         #Add the virus colors to a list where the index of the color matches target_virus_images
         colors = [BLUE, GREEN, PURPLE, RED]
 
+        #Set Background
+        
+
         #Set text
-        catch_text = self.font.render("Pegar o Virus", True, BLACK)
+        catch_text = self.font.render("Atacar o Virus", True, BLACK)
         catch_rect = catch_text.get_rect()
         catch_rect.centerx = WINDOW_WIDTH//2
         catch_rect.top = 5
@@ -102,17 +108,22 @@ class Game():
         warp_rect.topright = (WINDOW_WIDTH - 10, 35)
 
         #Blit the HUD
+        
         display_surface.blit(catch_text, catch_rect)
         display_surface.blit(score_text, score_rect)
         display_surface.blit(round_text, round_rect)
+        
         display_surface.blit(lives_text, lives_rect)
         display_surface.blit(time_text, time_rect)
         display_surface.blit(warp_text, warp_rect)
+        
         display_surface.blit(self.target_virus_image, self.target_virus_rect)
 
+
         pygame.draw.rect(display_surface, colors[self.target_virus_type], (WINDOW_WIDTH//2 - 32, 30, 64, 64), 2)
-        pygame.draw.rect(display_surface, colors[self.target_virus_type], (0, 100, WINDOW_WIDTH, WINDOW_HEIGHT-200), 4)
-    
+        pygame.draw.rect(display_surface, colors[self.target_virus_type], (0, 100, WINDOW_WIDTH, WINDOW_HEIGHT-210), 4)
+        
+        
     def check_collisions(self):
         """Check for collisions between player and virus"""
         #Check for collision between a player and an indiviaual virus
@@ -123,12 +134,12 @@ class Game():
         if collided_virus:
             #Caught the correct virus
             if collided_virus.type == self.target_virus_type:
-                self.score += 100*self.round_number
+                self.kill_virus_sound.play()
+                self.score += 10*self.round_number
                 #Remove caught virus
                 collided_virus.remove(self.virus_group)
                 if (self.virus_group):
                     #There are more viruss to catch
-                    #self.player.catch_sound.play()
                     self.choose_new_target()
                 else:
                     #The round is complete
@@ -136,15 +147,13 @@ class Game():
                     self.start_new_round()
             #Caught the wrong virus
             else:
-                #self.player.die_sound.play()
-                
-                count = self.player.lives
-                i = 0
+                self.wrong_virus_sound.play()            
                 self.player.lives -= 1
                 
-                for life in self.life_group:
-                    if  i == count:
+                for i, life in enumerate(self.life_group):
+                    if  i == self.player.lives:
                      self.life_group.remove(life)
+                     display_surface.fill((0, 0, 0))
                     
              
                 #Check for game over
@@ -158,7 +167,6 @@ class Game():
         """Populate board with new virus"""
         #Provide a score bonus based on how quickly the round was finished
         self.score += int(100*self.round_number/(1 + self.round_time))
-
         #Reset round values
         self.round_time = 0
         self.frame_count = 0
@@ -171,15 +179,16 @@ class Game():
 
         #Add viruss to the virus group
         for i in range(self.round_number):
-            self.virus_group.add(Virus(random.randint(0, WINDOW_WIDTH - 64), random.randint(100, WINDOW_HEIGHT-164), self.target_virus_images[0], 0))
-            self.virus_group.add(Virus(random.randint(0, WINDOW_WIDTH - 64), random.randint(100, WINDOW_HEIGHT-164), self.target_virus_images[1], 1))
-            self.virus_group.add(Virus(random.randint(0, WINDOW_WIDTH - 64), random.randint(100, WINDOW_HEIGHT-164), self.target_virus_images[2], 2))
-            self.virus_group.add(Virus(random.randint(0, WINDOW_WIDTH - 64), random.randint(100, WINDOW_HEIGHT-164), self.target_virus_images[3], 3))
+            self.virus_group.add(Virus(random.randint(0, WINDOW_WIDTH - 64), random.randint(100, WINDOW_HEIGHT-210), self.target_virus_images[0], 0))
+            self.virus_group.add(Virus(random.randint(0, WINDOW_WIDTH - 64), random.randint(100, WINDOW_HEIGHT-210), self.target_virus_images[1], 1))
+            self.virus_group.add(Virus(random.randint(0, WINDOW_WIDTH - 64), random.randint(100, WINDOW_HEIGHT-210), self.target_virus_images[2], 2))
+            self.virus_group.add(Virus(random.randint(0, WINDOW_WIDTH - 64), random.randint(100, WINDOW_HEIGHT-210), self.target_virus_images[3], 3))
+
 
         #Choose a new target virus
         self.choose_new_target()
 
-        self.next_level_sound.play()
+        
 
     def choose_new_target(self):
         """Choose a new target virus for the player"""
@@ -211,6 +220,10 @@ class Game():
         display_surface.blit(sub_text, sub_rect)
         pygame.display.update()
 
+        #Pause level sound
+        self.level_sound.stop()
+
+
         #Pause the game
         is_paused = True
         while is_paused:
@@ -231,66 +244,118 @@ class Game():
         self.player.lives = 5
         self.player.warps = 2
         self.player.reset()
-
+        self.level_sound.play(-1)
+        x = 70
+        for i in range(0, 5):
+            life = Life(x,45)
+            self.life_group.add(life)
+            x += 35
         self.start_new_round()
+
+    def credit(self):
+        WHITE= (255, 255, 255)
+        BLACK = (0, 0, 0)
+
+        global running
+
+        credit_font = pygame.font.Font("Fonts/AtlantisText-Regular.ttf", 20)
+        is_credit = True
+
+        credits = ["Adolfo Kurt Olguin Mostajo - Game Programmer", "Caroline Messias Aloca - Game Art Design", "Melissa Miho Suzaki Morimoto - Game Art Design", "Pedro Henrique Pradela - Game Art Design"]
+        text_rects = []
+        while is_credit:
+            display_surface.fill(WHITE)
+            for event in pygame.event.get():
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_RETURN:
+                        is_credit = False
+                if event.type == pygame.QUIT:
+                    is_credit = False
+                    running = False
+
+            for i, credit in enumerate(credits):
+                text_rect = self.draw_text(credit, credit_font, BLACK, (400), (250 + i * 50 + 10))
+                text_rects.append(text_rect)
+
+            self.draw_text("      Pressione 'Enter' para voltar",credit_font, BLACK, (400), (600))
+
+            pygame.display.update()
+
 
     def main_menu(self):
         WHITE= (255, 255, 255)
         BLACK = (0, 0, 0)
+        YELLOW = (255, 255, 0)
+        
+        option_font = pygame.font.Font("Fonts/AtlantisText-Regular.ttf", 20)
 
-        name_game_text = self.font_title.render("VIRUS WARS", True, BLACK)
-        name_game_rect = name_game_text.get_rect()
-        name_game_rect.center = (WINDOW_WIDTH//2, 100)
+        options = ["Iniciar Jogo", "Creditos", "Sair"]
 
-        name_game_sub_text = self.font_subtext.render("\"A luta pela Imunização\"", True, BLACK)
-        name_game_sub_rect = name_game_sub_text.get_rect()
-        name_game_sub_rect.center = (WINDOW_WIDTH//2, 150)
-
-        start_game_text = self.font.render("Iniciar Jogo", True, BLACK)
-        start_game_rect = start_game_text.get_rect()
-        start_game_rect.center = (WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 64)
-
-        credits_game_text = self.font.render("Creditos", True, BLACK)
-        credits_game_rect = credits_game_text.get_rect()
-        credits_game_rect.center = (WINDOW_WIDTH//2, WINDOW_HEIGHT//2 + 128)
-
-        #Display the pause text
-        display_surface.fill(WHITE)
-        display_surface.blit(name_game_text, name_game_rect)
-        display_surface.blit(name_game_sub_text, name_game_sub_rect)
-        display_surface.blit(start_game_text, start_game_rect)
-        display_surface.blit(credits_game_text, credits_game_rect)
-
+        self.image_background = pygame.image.load("Images/background.png")
+        self.menu_select_sound = pygame.mixer.Sound("Sounds/menu_selection.wav")
+        self.menu_sound = pygame.mixer_music.load("Sounds/Dark Harmony.wav")
         pygame.display.update()
+        pygame.mixer_music.play()
 
-        is_paused = True
-        while is_paused:
-            keys = pygame.key.get_pressed()
-            if keys[pygame.K_UP]:
-                pygame.draw.rect(display_surface,(WHITE),credits_game_rect,1)
-                pygame.draw.rect(display_surface,(0, 0, 10),start_game_rect,1)
-                pygame.display.update()
 
-            if keys[pygame.K_DOWN]:
-                pygame.draw.rect(display_surface,WHITE,start_game_rect,1)
-                pygame.draw.rect(display_surface,(0, 0, 10),credits_game_rect,1)
-                pygame.display.update()
+        is_menu = True
+        while is_menu:                       
+            display_surface.fill(WHITE)
+            display_surface.blit(self.image_background, (200, 180, 0, 0))
+            text_rects = []
+            for i, option in enumerate(options):
+                text_rect = self.draw_text(option, option_font, BLACK, (700), (250 + i * 50 + 10))
+                text_rects.append(text_rect)
+                if self.is_mouse_over_text(text_rect):
+                    #self.menu_select_sound.play()
+                    pygame.draw.line(display_surface, BLACK, (text_rect.left, text_rect.bottom + 5), (text_rect.right, text_rect.bottom + 5), 2)  # Highlight the text with a line when hovered
 
             for event in pygame.event.get():
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
-                        is_paused = False
                 if event.type == pygame.QUIT:
-                    is_paused = False
                     running = False
+                    pygame.quit()
+                    sys.exit()
 
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                for i, text_rect in enumerate(text_rects):
+                    if self.is_mouse_over_text(text_rect):
+                        print("Opcao :", options[i])
+                        # Add your logic here for the clicked option
+                        if options[i] == "Iniciar Jogo":
+                            # Start the game
+                            pygame.mixer_music.stop()
+                            self.level_sound.play(-1)
+                            is_menu = False
+                            
+                        elif options[i] == "Creditos":
+                            # Go to the Cretits
+                            self.credit()
+                        elif options[i] == "Sair":
+                            pygame.quit()
+                            sys.exit()
+            
+            pygame.display.update()
+            clock.tick(FPS)
+
+    def is_mouse_over_text(self, text_rect):
+        mouse_pos = pygame.mouse.get_pos()
+        if text_rect.collidepoint(mouse_pos):
+            return True
+        return False
+    
+    def draw_text(self, text, font, color, x, y):
+        text_surface = font.render(text, True, color)
+        text_rect = text_surface.get_rect()
+        text_rect.topleft = (x, y)
+        display_surface.blit(text_surface, text_rect)
+        return text_rect
 
 class Player(pygame.sprite.Sprite):
     """A player class that the user can control"""
     def __init__(self):
         """Initialize the player"""
         super().__init__()
-        self.image = pygame.image.load("Images/personagem.png")
+        self.image = pygame.image.load("Images/player_down.png")
         self.rect = self.image.get_rect()
         self.rect.centerx = WINDOW_WIDTH//2
         self.rect.bottom = WINDOW_HEIGHT
@@ -299,7 +364,7 @@ class Player(pygame.sprite.Sprite):
         self.warps = 2
         self.velocity = 8
 
-        #self.catch_sound = pygame.mixer.Sound("Sounds/catch.wav")
+        
         #self.die_sound = pygame.mixer.Sound("Sounds/die.wav")
         #self.warp_sound = pygame.mixer.Sound("Sounds/warp.wav")
 
@@ -310,12 +375,16 @@ class Player(pygame.sprite.Sprite):
 
         #Move the player within the bounds of the screen
         if keys[pygame.K_LEFT] and self.rect.left > 0:
+            self.image = pygame.image.load("Images/player_left.png")
             self.rect.x -= self.velocity
         if keys[pygame.K_RIGHT] and self.rect.right < WINDOW_WIDTH:
+            self.image = pygame.image.load("Images/player_right.png")
             self.rect.x += self.velocity
         if keys[pygame.K_UP] and self.rect.top > 100:
+            self.image = pygame.image.load("Images/player_up.png")
             self.rect.y -= self.velocity
-        if keys[pygame.K_DOWN] and self.rect.bottom < WINDOW_HEIGHT - 100:
+        if keys[pygame.K_DOWN] and self.rect.bottom < WINDOW_HEIGHT - 127:
+            self.image = pygame.image.load("Images/player_down.png")
             self.rect.y += self.velocity
 
 
@@ -331,7 +400,6 @@ class Player(pygame.sprite.Sprite):
         """Resets the players position"""
         self.rect.centerx = WINDOW_WIDTH//2
         self.rect.bottom = WINDOW_HEIGHT
-
 
 class Virus(pygame.sprite.Sprite):
     """A class to create enemy virus objects"""
@@ -359,7 +427,7 @@ class Virus(pygame.sprite.Sprite):
         #Bounce the virus off the edges of the display
         if self.rect.left <= 0 or self.rect.right >= WINDOW_WIDTH:
             self.dx = -1*self.dx
-        if self.rect.top <= 100 or self.rect.bottom >= WINDOW_HEIGHT - 100:
+        if self.rect.top <= 100 or self.rect.bottom >= WINDOW_HEIGHT - 120:
             self.dy = -1*self.dy
 
 class Life(pygame.sprite.Sprite):
@@ -370,9 +438,8 @@ class Life(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.centerx = x
         self.rect.centery = y
+       
         
-
-
 #Create a player group and Player object
 my_player_group = pygame.sprite.Group()
 my_player = Player()
@@ -397,6 +464,8 @@ my_game.main_menu()
 my_game.start_new_round()
 
 #The main game loop
+image_level_background = pygame.image.load("Images/background_level2.png")
+
 running = True
 while running:
     #Check to see if user wants to quit
@@ -410,6 +479,7 @@ while running:
 
     #Fill the display
     display_surface.fill((255, 255, 255))
+    display_surface.blit(image_level_background, (0,0))
 
     #Update and draw sprite groups
     my_player_group.update()
